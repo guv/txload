@@ -16,7 +16,7 @@ Add the following to your dependency vector in your project.clj:
 
 Latest on [clojars.org](http://clojars.org):
 
-![Version](https://clojars.org/txload/txload/latest-version.svg)
+![Version](https://clojars.org/txload/latest-version.svg)
 
 ## Usage
 
