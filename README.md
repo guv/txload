@@ -11,12 +11,12 @@ This library is only needed until namespace loading is made transactional in Clo
 Add the following to your dependency vector in your project.clj:
 
 ```clojure
-[txload "0.1.0"]
+[txload "0.1.1"]
 ```
 
 Latest on [clojars.org](http://clojars.org):
 
-![Version](https://clojars.org/txload/latest-version.svg)
+![Version](https://clojars.org/txload/txload/latest-version.svg)
 
 ## Usage
 

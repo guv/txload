@@ -28,6 +28,9 @@
 (defonce ^:dynamic *verbose* false)
 
 
+(defonce ^:private enabled-ref (ref false))
+
+
 (defn- core-loaded-libs-ref
   "Returns the reference bound to c.c/*loaded-libs*."
   []
@@ -199,23 +202,39 @@
           (alter ref #(reduce disj % inconsistent-keys)))))))
 
 
+(defn enabled?
+  "Is transactional loading enabled?"
+  []
+  (deref enabled-ref))
+
+
 (defn enable
   "Enables transactional loading of Clojure namespaces.
   The functions clojure.core/load-one and clojure.core/load-all are replaced via hooks.
-  A watcher is added to the reference bound to clojure.core/*loaded-libs*."
+  Returns true if txload was not enabled before."
   []
-  (initialize)
-  (h/add-hook #'clojure.core/load-one ::txload #'wrapped-load-one)
-  (h/add-hook #'clojure.core/load-all ::txload #'wrapped-load-all)
-  (h/add-hook #'clojure.core/load-lib ::txload #'wrapped-load-lib)
-  true)
+  (dosync
+    (let [active? (ensure enabled-ref)]
+      (when-not active?
+        (initialize)
+        (h/add-hook #'clojure.core/load-one ::txload #'wrapped-load-one)
+        (h/add-hook #'clojure.core/load-all ::txload #'wrapped-load-all)
+        (h/add-hook #'clojure.core/load-lib ::txload #'wrapped-load-lib)
+        (alter enabled-ref (constantly true)))
+      ; true ... if not enabled before, false ... otherwise
+      (not active?))))
 
 
 (defn disable
   "Disables transactional loading of Clojure namespaces.
-  The watcher and all hooks are removed."
+  The watcher and all hooks are removed.
+  Returns true if txload was enabled before."
   []
-  (h/remove-hook #'clojure.core/load-one ::txload)
-  (h/remove-hook #'clojure.core/load-all ::txload)
-  (h/remove-hook #'clojure.core/load-lib ::txload)
-  true)
+  (dosync
+    (let [active? (ensure enabled-ref)]
+      (when active?
+        (h/remove-hook #'clojure.core/load-one ::txload)
+        (h/remove-hook #'clojure.core/load-all ::txload)
+        (h/remove-hook #'clojure.core/load-lib ::txload)
+        (alter enabled-ref (constantly false)))
+      active?)))
